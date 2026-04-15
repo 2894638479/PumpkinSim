@@ -108,7 +108,7 @@ publishMods {
         mod_version.contains("beta",true) -> BETA
         else -> STABLE
     }
-    displayName = "Pumpkin Sim $version"
+    displayName = "Pumpkin Sim $tag"
     modLoaders.addAll("forge","fabric","neoforge")
 
     modrinth {
