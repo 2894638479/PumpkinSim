@@ -163,13 +163,14 @@ class SimMatrix(val width:Int,val height:Int,var history:History = History()) {
         lastHitI = i
         lastHitJ = j
         lastGrowDirection = -1
-        if(Random.nextInt(1 + (25/growSpeed(i,j)).toInt()) != 0) return
         when(block(i,j)) {
-            Stem -> when(Random.nextInt(0,4).also { lastGrowDirection = it }) {
-                0 -> growPumpkin(i,j, GrownStemL)
-                1 -> growPumpkin(i,j, GrownStemT)
-                2 -> growPumpkin(i,j, GrownStemR)
-                3 -> growPumpkin(i,j, GrownStemB)
+            Stem -> if(Random.nextInt(1 + (25/growSpeed(i,j)).toInt()) == 0) {
+                when(Random.nextInt(0,4).also { lastGrowDirection = it }) {
+                    0 -> growPumpkin(i, j, GrownStemL)
+                    1 -> growPumpkin(i, j, GrownStemT)
+                    2 -> growPumpkin(i, j, GrownStemR)
+                    3 -> growPumpkin(i, j, GrownStemB)
+                }
             }
             else -> {}
         }
