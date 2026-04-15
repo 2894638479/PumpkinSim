@@ -1,7 +1,9 @@
+import org.gradle.kotlin.dsl.publishMods
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "2.3.10"
+    id("me.modmuss50.mod-publish-plugin") version "0.8.1"
 }
 
 val maven_group: String by project
@@ -84,3 +86,55 @@ tasks.processResources {
     filesMatching("pack.mcmeta") { expand(map) }
 }
 
+val tag = "v$version"
+
+val shouldPublish by lazy {
+    providers.exec {
+        commandLine("git", "ls-remote", "--tags", "origin", "refs/tags/$tag")
+    }.standardOutput.asText.get().isBlank()
+}
+tasks.configureEach {
+    if(group == "publishing") enabled = shouldPublish
+}
+
+val jar: org.gradle.jvm.tasks.Jar by tasks
+publishMods {
+    file = jar.archiveFile
+    additionalFiles = files(sourcesJar.archiveFile)
+    changelog = "no changelog."
+    type = when {
+        mod_version.contains("SNAPSHOT",true) -> ALPHA
+        mod_version.contains("alpha",true) -> ALPHA
+        mod_version.contains("beta",true) -> BETA
+        else -> STABLE
+    }
+    displayName = "Pumpkin Sim $version"
+    modLoaders.addAll("forge","fabric","neoforge")
+
+    modrinth {
+        accessToken = providers.environmentVariable("MODRINTH_TOKEN")
+        projectId = "BcXzFtbh"
+        requires("kotlinmcui")
+        minecraftVersionRange {
+            start = "1.14"
+            end = "latest"
+        }
+    }
+    curseforge {
+        accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
+        projectId = "1514126"
+        requires("kotlinmcui")
+        clientRequired = true
+        serverRequired = false
+        minecraftVersionRange {
+            start = "1.14"
+            end = "latest"
+        }
+    }
+    github {
+        accessToken = providers.environmentVariable("GITHUB_TOKEN")
+        repository = "2894638479/PumpkinSim"
+        commitish = "master"
+        tagName = tag
+    }
+}
