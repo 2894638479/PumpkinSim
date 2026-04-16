@@ -51,9 +51,11 @@ class Entry : DslEntryService {
     var running = false
     val scope = CoroutineScope(Dispatchers.Default)
     var avgRunSpeed:Double = Double.NaN
+    var showPercentageOnBlock: Boolean = false
+    var toBeConsumed = 0
     override fun createScreen() = dslBackend.createScreen {
         Row {
-            matrix.ui(tool.block,!running)
+            matrix.ui(tool.block,!running,showPercentageOnBlock)
             val scroller by Scroller.empty.remember.property
             ScrollableColumn(scrollerProp = scroller) {
                 if(running) {
@@ -68,7 +70,8 @@ class Entry : DslEntryService {
                     TextAutoFold { "最大南瓜数：${matrix.maxPumpkins}".emit() }
                 }
                 matrix.history.let {
-                    TextAutoFold { "总轮数：${it.turns}".emit() }
+                    TextAutoFold { "已统计轮数：${it.turns}".emit() }
+                    TextAutoFold { "待统计：$toBeConsumed".emit() }
                     TextAutoFold { "平均步数：${it.avgSteps}".emit() }
                     TextAutoFold { "平均南瓜数：${it.avgPumpkins}".emit() }
                 }
@@ -112,7 +115,9 @@ class Entry : DslEntryService {
                             }.defaultBackground()
                         }
                     }
+                    Config.BoolButton(::showPercentageOnBlock,"显示方块百分比")
                 }
+
                 val growable = matrix.growable()
                 Row {
                     Simple.Button("下一步",!running && growable) {
@@ -177,6 +182,7 @@ class Entry : DslEntryService {
                                 avgRunSpeed = (turns - lastTurns).toDouble() / (timeNano - lastTimeNano) * 1e9
                                 lastTimeNano = timeNano
                                 lastTurns = turns
+                                toBeConsumed = queue.size
                             }
                             queue.poll()?.let {
                                 it.addToHistory()
@@ -185,6 +191,7 @@ class Entry : DslEntryService {
                             if(totalTurns() >= turns) break
                         }
                         job.join()
+                        toBeConsumed = 0
                         running = false
                     }
                 }

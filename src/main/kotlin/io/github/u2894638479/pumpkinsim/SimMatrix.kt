@@ -4,13 +4,17 @@ import io.github.u2894638479.kotlinmcui.context.DslContext
 import io.github.u2894638479.kotlinmcui.context.scaled
 import io.github.u2894638479.kotlinmcui.functions.decorator.clickable
 import io.github.u2894638479.kotlinmcui.functions.decorator.hoverMask
+import io.github.u2894638479.kotlinmcui.functions.decorator.shrink
 import io.github.u2894638479.kotlinmcui.functions.forEachWithId
+import io.github.u2894638479.kotlinmcui.functions.ui.Box
 import io.github.u2894638479.kotlinmcui.functions.ui.Column
 import io.github.u2894638479.kotlinmcui.functions.ui.Row
+import io.github.u2894638479.kotlinmcui.functions.ui.TextFlatten
 import io.github.u2894638479.kotlinmcui.math.Measure
 import io.github.u2894638479.kotlinmcui.modifier.Modifier
 import io.github.u2894638479.kotlinmcui.modifier.padding
 import io.github.u2894638479.kotlinmcui.modifier.size
+import io.github.u2894638479.kotlinmcui.text.DslCharStyle
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
@@ -20,12 +24,14 @@ class SimMatrix(val width:Int,val height:Int,var history:History = History()) {
         val stepsLock = Any()
         val pumpkinsLock = Any()
         val pumpkinStepsLock = Any()
+        val blockCounterLock = Any()
         var turns = 0
         val totalSteps = mutableListOf<Int>()
         val avgSteps get() = synchronized(stepsLock) { totalSteps.average() }
         val pumpkinSteps = mutableListOf<IntArray>()
         val totalPumpkins = mutableListOf<Int>()
         val avgPumpkins get() = synchronized(pumpkinsLock) { totalPumpkins.average() }
+        var blockCounter: IntArray? = null
         fun pumpkinAvgSteps(): Pair<List<Double>,List<Double>> {
             synchronized(pumpkinStepsLock) {
                 val sums = LongArray(pumpkinSteps.maxOf { it.size }) { 0L }
@@ -59,7 +65,13 @@ class SimMatrix(val width:Int,val height:Int,var history:History = History()) {
             synchronized(it.pumpkinsLock) { it.totalPumpkins += totalPumpkins }
             synchronized(it.stepsLock) { it.totalSteps += totalSteps }
             synchronized(it.pumpkinStepsLock) { it.pumpkinSteps += pumpkinTotalSteps.toIntArray() }
-            it.turns++
+            synchronized(it.blockCounterLock) {
+                val arr = it.blockCounter ?: IntArray(width*height).apply { it.blockCounter = this }
+                for(i in array.indices) {
+                    if(array[i] is Pumpkin || array[i] is GrownStemBlock) arr[i]++
+                }
+                it.turns++
+            }
         }
     }
     val array = Array<Block>(width*height) { Dirt }
@@ -209,7 +221,7 @@ class SimMatrix(val width:Int,val height:Int,var history:History = History()) {
     }
 
     context(ctx: DslContext)
-    fun ui(tool: Block, editable: Boolean, maxSize: Measure = 200.scaled) {
+    fun ui(tool: Block, editable: Boolean,showPercentageOnBlock:Boolean, maxSize: Measure = 200.scaled) {
         val w: Measure
         val h: Measure
         if(width > height) {
@@ -224,11 +236,20 @@ class SimMatrix(val width:Int,val height:Int,var history:History = History()) {
                 Column {
                     (0..<height).forEachWithId { i ->
                         val index = i * width + j
-                        if(editable) array[index].image().clickable {
+                        val image = if(editable) array[index].image().clickable {
                             array[index] = tool
                             updateAllState()
                             history = History()
                         }.hoverMask() else array[index].image()
+                        if(showPercentageOnBlock) {
+                            val percentage = synchronized(history.blockCounterLock) {
+                                history.blockCounter?.let { it[index] / history.turns.toDouble() }
+                            }
+                            image.Box {
+                                val string = if(percentage == 1.0) "100" else String.format("%.1f",percentage?.times(100) ?: 0.0)
+                                TextFlatten { string.emit(style = DslCharStyle().shadowed) }.shrink()
+                            }
+                        }
                     }
                 }
             }
