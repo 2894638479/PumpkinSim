@@ -17,6 +17,7 @@ import io.github.u2894638479.kotlinmcui.math.Color
 import io.github.u2894638479.kotlinmcui.math.Scroller
 import io.github.u2894638479.kotlinmcui.math.px
 import io.github.u2894638479.kotlinmcui.modifier.Modifier
+import io.github.u2894638479.kotlinmcui.modifier.minWidth
 import io.github.u2894638479.kotlinmcui.modifier.padding
 import io.github.u2894638479.kotlinmcui.modifier.size
 import io.github.u2894638479.kotlinmcui.modifier.weight
@@ -25,6 +26,7 @@ import io.github.u2894638479.kotlinmcui.prop.getValue
 import io.github.u2894638479.kotlinmcui.prop.setValue
 import io.github.u2894638479.kotlinmcui.utils.Config
 import io.github.u2894638479.kotlinmcui.utils.Simple
+import io.github.u2894638479.kotlinmcui.utils.Simple.simpleTooltip
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.joinAll
@@ -115,8 +117,8 @@ class Entry : DslEntryService {
                             }.defaultBackground()
                         }
                     }
-                    Config.BoolButton(::showPercentageOnBlock,"显示方块百分比")
                 }
+                Config.BoolButton(::showPercentageOnBlock,"显示方块百分比")
 
                 val growable = matrix.growable()
                 Row {
@@ -134,6 +136,13 @@ class Entry : DslEntryService {
                             }
                             matrix.updateMaxPumpkins()
                         }
+                    }
+                }
+                Simple.Button("生长点转为泥土",!running) {
+                    if(!running) matrix.changeGrowableToDirt()
+                }.simpleTooltip("提示") {
+                    TextAutoFold(Modifier.minWidth(150.scaled)) {
+                        "周围的耕地会为生长加速，而南瓜收割后会变为泥土。把可能生长的位置全变成泥土更接近真实情况。".emit()
                     }
                 }
                 Row {

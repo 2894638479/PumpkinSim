@@ -123,6 +123,18 @@ class SimMatrix(val width:Int,val height:Int,var history:History = History()) {
         }
         return Matcher(graph,array.size).maxMatching() + array.count { it is Pumpkin }
     }
+    fun changeGrowableToDirt() {
+        updateAllState()
+        for(stem in stems) {
+            val i = stem / width
+            val j = stem % width
+            if(isPumpkinGrowable(i,j+1)) setBlock(i,j+1,Dirt)
+            if(isPumpkinGrowable(i,j-1)) setBlock(i,j-1,Dirt)
+            if(isPumpkinGrowable(i+1,j)) setBlock(i+1,j,Dirt)
+            if(isPumpkinGrowable(i-1,j)) setBlock(i-1,j,Dirt)
+        }
+        updateAllState()
+    }
     fun check() {
         val hasWater = BooleanArray(array.size) { false }
         for(i in 0..<height) {
